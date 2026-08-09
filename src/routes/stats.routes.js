@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { getStats } from "../services/stats.service.js";
+import { getDefaultCache } from "../config/defaultCache.js";
 
 const router = Router();
 
 router.get("/", (_req, res) => {
-  res.json(getStats());
+  res.json(getDefaultCache().stats());
 });
 
 export default router;

@@ -1,22 +1,24 @@
-import redis from "../config/redis.js";
-import { findBestMatch } from "./similarity.service.js";
+import { getDefaultCache } from "../config/defaultCache.js";
 
-const CACHE_KEY = "semantic-cache:entries";
-const THRESHOLD = Number(process.env.SIMILARITY_THRESHOLD || 0.92);
-
+/**
+ * @deprecated Prefer SemanticCache / CacheProvider. Kept for older imports.
+ */
 export async function findSimilar(embedding) {
-  const raw = await redis.lrange(CACHE_KEY, 0, -1);
-  const entries = raw.map((item) => JSON.parse(item));
-  return findBestMatch(embedding, entries, THRESHOLD);
+  const cache = getDefaultCache();
+  const entries = await cache.cacheProvider.getAll();
+  const { findBestMatch } = await import("./similarity.service.js");
+  return findBestMatch(embedding, entries, cache.threshold);
 }
 
+/**
+ * @deprecated Prefer SemanticCache / CacheProvider. Kept for older imports.
+ */
 export async function storeEntry({ prompt, embedding, response }) {
-  const entry = JSON.stringify({
+  const cache = getDefaultCache();
+  await cache.cacheProvider.add({
     prompt,
     embedding,
     response,
     createdAt: Date.now(),
   });
-
-  await redis.lpush(CACHE_KEY, entry);
 }

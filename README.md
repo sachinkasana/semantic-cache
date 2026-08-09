@@ -25,9 +25,34 @@ cp .env.example .env
 docker compose up -d
 ```
 
-> Publishing to npm as `semantic-cache-js` is on the roadmap. Today, clone and run from source.
+> Publishing to npm as `semantic-cache-js` is on the roadmap. Today, import from source:
+
+```js
+import { SemanticCache } from "./src/index.js";
+```
 
 ## Quick Start
+
+### Library API
+
+```js
+import { SemanticCache } from "./src/index.js";
+
+const cache = new SemanticCache({
+  provider: "openai",
+  cache: "redis", // or "memory"
+  redisUrl: process.env.REDIS_URL,
+  threshold: 0.92,
+});
+
+const result = await cache.ask("What is semantic caching?");
+console.log(result);
+// { cached, similarity, latency, provider, response }
+
+console.log(cache.stats());
+```
+
+### Express demo
 
 ```bash
 npm run dev
@@ -53,19 +78,16 @@ A paraphrased follow-up should return a cache hit:
 
 ## How It Works
 
-1. Embed the prompt with a provider-agnostic `EmbeddingProvider`
-2. Compare against Redis entries via cosine similarity
-3. **Hit** → return cached response + metadata (`provider: "redis"`)
-4. **Miss** → call the LLM, store `{prompt, embedding, response}`, return + metadata
+1. `ask(prompt)` embeds the prompt via `EmbeddingProvider`
+2. Load entries from `CacheProvider` (Redis or Memory)
+3. Cosine similarity finds the best match ≥ threshold
+4. **Hit** → return cached response + metadata
+5. **Miss** → `LLMProvider.complete()`, store entry, return + metadata
 
-Swap embedding backends later (Gemini, Voyage, Cohere, Ollama) without changing cache logic:
-
-```js
-const provider = {
-  async embed(text) {
-    // return number[]
-  },
-};
+```
+EmbeddingProvider  →  OpenAIEmbeddingProvider   (+ Gemini / Ollama later)
+CacheProvider      →  RedisCacheProvider | MemoryCacheProvider
+LLMProvider        →  OpenAIChatProvider
 ```
 
 ## API
@@ -130,12 +152,19 @@ Details: [benchmark/results.md](./benchmark/results.md)
 
 ```
 semantic-cache/
-├── src/                 # Core services, providers, middleware
-├── examples/            # Express, Fastify, Next.js, NestJS
-├── docs/                # Design notes
-├── benchmark/           # Latency simulations
-├── tests/               # Unit tests
-├── docker-compose.yml
+├── src/
+│   ├── SemanticCache.js      # cache.ask(prompt)
+│   ├── index.js              # package exports
+│   ├── interfaces/           # Embedding / Cache / LLM contracts
+│   ├── providers/openai/     # OpenAI adapters (more providers later)
+│   ├── cache/                # Redis + Memory backends
+│   ├── services/             # similarity, stats
+│   ├── middleware/           # Express middleware
+│   └── routes/               # Express demo API
+├── examples/
+├── docs/
+├── benchmark/
+├── tests/
 └── README.md
 ```
 

@@ -1,18 +1,11 @@
-/**
- * Provider-agnostic embedding interface.
- *
- * @typedef {Object} EmbeddingProvider
- * @property {(text: string) => Promise<number[]>} embed
- */
+import { assertEmbeddingProvider } from "../interfaces/EmbeddingProvider.js";
 
 /**
- * @param {EmbeddingProvider} provider
+ * Call an EmbeddingProvider.embed(text).
+ * @param {import("../interfaces/EmbeddingProvider.js").EmbeddingProvider} provider
  * @param {string} text
- * @returns {Promise<number[]>}
  */
 export async function embedWith(provider, text) {
-  if (!provider?.embed) {
-    throw new Error("EmbeddingProvider.embed(text) is required");
-  }
+  assertEmbeddingProvider(provider);
   return provider.embed(text);
 }

@@ -1,24 +1,22 @@
-import { resolvePrompt } from "../services/chat.service.js";
+import { SemanticCache } from "../SemanticCache.js";
+import { getDefaultCache } from "../config/defaultCache.js";
 
 /**
  * Express middleware for semantic caching.
  *
  * @example
- * app.use(express.json());
- * app.use(
- *   semanticCache({
- *     threshold: 0.92, // reserved for future per-request overrides
- *   }),
- * );
+ * app.post("/chat", semanticCache({ threshold: 0.92 }));
  *
- * Or mount on a path and let it handle `req.body.prompt` end-to-end:
- * app.post("/chat", semanticCache(), (req, res) => res.json(res.locals.semanticCache));
- *
- * Default behavior: resolve the prompt and send JSON (terminal middleware).
- * Pass `{ passthrough: true }` to attach the result on `res.locals.semanticCache` and call next().
+ * // or inject an existing instance
+ * app.post("/chat", semanticCache({ cache }));
  */
 export function semanticCache(options = {}) {
-  const { passthrough = false, ...resolveOptions } = options;
+  const { passthrough = false, cache, ...cacheOptions } = options;
+
+  let instance = cache || null;
+  if (!instance && Object.keys(cacheOptions).length > 0) {
+    instance = new SemanticCache(cacheOptions);
+  }
 
   return async function semanticCacheMiddleware(req, res, next) {
     try {
@@ -29,7 +27,7 @@ export function semanticCache(options = {}) {
         return res.status(400).json({ error: "prompt is required" });
       }
 
-      const result = await resolvePrompt(prompt, resolveOptions);
+      const result = await (instance || getDefaultCache()).ask(prompt);
       res.locals.semanticCache = result;
 
       if (passthrough) return next();

@@ -1,12 +1,8 @@
-import { createOpenAIEmbeddingProvider } from "../providers/openai.embedding.js";
-import { embedWith } from "../providers/embedding.provider.js";
-
-const defaultProvider = createOpenAIEmbeddingProvider();
+import { getDefaultCache } from "../config/defaultCache.js";
 
 /**
- * Create an embedding for text using the configured provider.
- * Swap providers later (Gemini, Voyage, Cohere, Ollama) without touching cache logic.
+ * @deprecated Prefer EmbeddingProvider / SemanticCache.
  */
-export async function createEmbedding(text, provider = defaultProvider) {
-  return embedWith(provider, text);
+export async function createEmbedding(text) {
+  return getDefaultCache().embeddingProvider.embed(text);
 }

@@ -1,19 +1,25 @@
-# Embedding providers
+# Providers & backends
 
-SemanticCacheJS talks to embeddings through a tiny interface:
+## Interfaces
 
-```js
-/**
- * @typedef {Object} EmbeddingProvider
- * @property {(text: string) => Promise<number[]>} embed
- */
-```
+| Contract | Method |
+|---|---|
+| `EmbeddingProvider` | `embed(text) → number[]` |
+| `LLMProvider` | `complete(prompt) → string` |
+| `CacheProvider` | `getAll()`, `add(entry)` |
 
-v1 ships with OpenAI (`src/providers/openai.embedding.js`).
+## Current implementations
 
-Planned adapters (same cache logic):
+| Kind | Class |
+|---|---|
+| Embeddings + chat | `providers/openai/OpenAIEmbeddingProvider`, `OpenAIChatProvider` |
+| Cache | `cache/RedisCacheProvider`, `cache/MemoryCacheProvider` |
+
+## Planned providers (same interfaces)
 
 - Gemini
-- Voyage AI
-- Cohere
+- Anthropic
 - Ollama
+- Voyage / Cohere
+
+Add a folder under `providers/<name>/`, implement the interface, and register it in `SemanticCache` factories — no cache logic changes.

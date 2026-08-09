@@ -1,12 +1,8 @@
-import openai from "../config/openai.js";
+import { getDefaultCache } from "../config/defaultCache.js";
 
-const MODEL = process.env.CHAT_MODEL || "gpt-4o-mini";
-
+/**
+ * @deprecated Prefer LLMProvider / SemanticCache.
+ */
 export async function generateResponse(prompt) {
-  const completion = await openai.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  return completion.choices[0].message.content;
+  return getDefaultCache().llmProvider.complete(prompt);
 }
