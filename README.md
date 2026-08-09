@@ -8,14 +8,14 @@ A production-ready semantic cache starter built with Node.js, Express, Redis, an
 - Lower latency and token costs
 - Cache by semantic similarity instead of exact text
 
-## Planned Structure
+## Structure
 
 ```
 src/
-  config/
-  routes/
-  services/
-  utils/
+  config/       # OpenAI + Redis clients
+  routes/       # HTTP routes
+  services/     # Embedding, cache, LLM
+  utils/        # Cosine similarity
 ```
 
 ## Tech Stack
@@ -25,12 +25,33 @@ src/
 - OpenAI Embeddings API
 - Cosine Similarity
 
+## Quick start
+
+```bash
+cp .env.example .env
+# set OPENAI_API_KEY in .env
+
+docker compose up -d
+npm install
+npm run dev
+```
+
+## Try it
+
+```bash
+curl -s http://localhost:3000/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"What is semantic caching?"}'
+```
+
+A second, similarly worded prompt should return `"cached": true` when similarity ≥ `SIMILARITY_THRESHOLD` (default `0.92`).
+
 ## Roadmap
 
-- [ ] Express API
-- [ ] Redis integration
-- [ ] Embedding service
-- [ ] Semantic similarity
-- [ ] Semantic cache service
-- [ ] Docker Compose
+- [x] Express API
+- [x] Redis integration
+- [x] Embedding service
+- [x] Semantic similarity
+- [x] Semantic cache service
+- [x] Docker Compose
 - [ ] Metrics
