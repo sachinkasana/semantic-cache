@@ -1,44 +1,59 @@
-# Semantic Cache
+# SemanticCacheJS
 
-A production-ready semantic cache starter built with Node.js, Express, Redis, and OpenAI Embeddings.
+A production-ready semantic caching library for OpenAI, Anthropic, Gemini, and other LLM providers.
 
-## Goals
+Reduce repeated LLM calls, cut token costs, and lower latency by caching responses by **meaning** — not exact string match.
 
-- Reduce repeated LLM calls
-- Lower latency and token costs
-- Cache by semantic similarity instead of exact text
+## Why SemanticCacheJS
 
-## Structure
+Most semantic cache demos only return a hit/miss boolean. SemanticCacheJS returns useful cache metadata so you can observe and debug production traffic:
 
-```
-src/
-  app.js
-  server.js
-  config/         # OpenAI + Redis clients
-  services/       # Embedding, cache, similarity, LLM
-  routes/         # HTTP routes
-  middleware/     # Request logger
-  utils/          # Cosine similarity math
+```json
+{
+  "cached": true,
+  "similarity": 0.94,
+  "latency": "42ms",
+  "provider": "redis",
+  "response": "..."
+}
 ```
 
-## Tech Stack
-
-- Node.js + Express
-- Redis
-- OpenAI Embeddings API
-- Cosine Similarity
+| Field | Meaning |
+|---|---|
+| `cached` | Whether the response came from cache |
+| `similarity` | Cosine similarity of the best match (`null` on miss) |
+| `latency` | End-to-end request time |
+| `provider` | `redis` on hit, `openai` on miss (more providers coming) |
+| `response` | Cached or freshly generated answer |
 
 ## Architecture
 
-![Semantic Cache architecture](./semantic-cache.png)
+![SemanticCacheJS architecture](./semantic-cache.png)
 
 **Request flow**
 
 1. Client sends a prompt to `POST /chat`
 2. Embedding service turns the prompt into a vector
-3. Cache service loads entries from Redis and similarity service finds the best cosine match
-4. **Hit** — return the cached response (no LLM call)
-5. **Miss** — call the LLM, store `{prompt, embedding, response}` in Redis, return the fresh response
+3. Cache service loads entries from Redis; similarity service finds the best cosine match
+4. **Hit** — return cached response + metadata (`provider: "redis"`)
+5. **Miss** — call the LLM, store `{prompt, embedding, response}`, return fresh response + metadata
+
+## Project layout
+
+```
+semantic-cache/
+├── src/                 # Core Express demo + services
+├── examples/            # Framework integrations (growing)
+│   ├── express/
+│   ├── fastify/
+│   ├── nextjs/
+│   └── nestjs/
+├── docs/                # Guides and design notes
+├── benchmark/           # Latency / hit-rate benchmarks
+├── tests/               # Unit and integration tests
+├── docker-compose.yml
+└── README.md
+```
 
 ## Quick start
 
@@ -59,14 +74,34 @@ curl -s http://localhost:3000/chat \
   -d '{"prompt":"What is semantic caching?"}'
 ```
 
-A second, similarly worded prompt should return `"cached": true` when similarity ≥ `SIMILARITY_THRESHOLD` (default `0.92`).
+A second, similarly worded prompt should return `"cached": true` with similarity ≥ `SIMILARITY_THRESHOLD` (default `0.92`) and a much lower `latency`.
+
+```bash
+npm test
+```
+
+## Tech stack (v1)
+
+- Node.js + Express
+- Redis
+- OpenAI Embeddings + Chat
+- Cosine similarity
 
 ## Roadmap
 
-- [x] Express API
-- [x] Redis integration
-- [x] Embedding service
-- [x] Semantic similarity
-- [x] Semantic cache service
-- [x] Docker Compose
-- [ ] Metrics
+| Version | Focus |
+|---|---|
+| **v1** | Semantic cache (Express + Redis + OpenAI) |
+| **v2** | Redis Vector Search |
+| **v3** | Qdrant support |
+| **v4** | Pinecone support |
+| **v5** | Observability & metrics |
+| **v6** | Express middleware package |
+| **v7** | LangGraph integration |
+| **v8** | Multi-tenant support |
+
+Also planned: Anthropic / Gemini providers, Fastify / Next.js / NestJS examples, and publishable npm API (`npm install semantic-cache-js`).
+
+## License
+
+MIT

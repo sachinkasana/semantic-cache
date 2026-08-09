@@ -5,7 +5,19 @@ import { generateResponse } from "../services/llm.service.js";
 
 const router = Router();
 
+function buildResult({ cached, similarity, provider, response, startedAt }) {
+  return {
+    cached,
+    similarity: similarity == null ? null : Number(similarity.toFixed(4)),
+    latency: `${Date.now() - startedAt}ms`,
+    provider,
+    response,
+  };
+}
+
 router.post("/", async (req, res, next) => {
+  const startedAt = Date.now();
+
   try {
     const { prompt } = req.body;
 
@@ -17,17 +29,29 @@ router.post("/", async (req, res, next) => {
     const hit = await findSimilar(embedding);
 
     if (hit) {
-      return res.json({
-        cached: true,
-        similarity: hit.score,
-        response: hit.response,
-      });
+      return res.json(
+        buildResult({
+          cached: true,
+          similarity: hit.score,
+          provider: "redis",
+          response: hit.response,
+          startedAt,
+        }),
+      );
     }
 
     const response = await generateResponse(prompt);
     await storeEntry({ prompt, embedding, response });
 
-    res.json({ cached: false, response });
+    res.json(
+      buildResult({
+        cached: false,
+        similarity: null,
+        provider: "openai",
+        response,
+        startedAt,
+      }),
+    );
   } catch (err) {
     next(err);
   }
