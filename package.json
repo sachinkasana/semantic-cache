@@ -16,9 +16,9 @@
     "demo": "node scripts/demo.js",
     "demo:simulate": "node scripts/demo.js --simulate",
     "test": "node --test tests/**/*.test.js",
+    "benchmark": "node benchmark/benchmark.js",
     "benchmark:without": "node benchmark/without-cache.js",
-    "benchmark:with": "node benchmark/with-cache.js",
-    "benchmark": "npm run benchmark:without && npm run benchmark:with"
+    "benchmark:with": "node benchmark/with-cache.js"
   },
   "keywords": [
     "semantic-cache",

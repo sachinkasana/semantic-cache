@@ -51,6 +51,9 @@ curl -s http://localhost:3000/chat \
 curl -s http://localhost:3000/chat \
   -H 'Content-Type: application/json' \
   -d '{"prompt":"Explain semantic caching"}'
+
+# 3) Operational metrics
+curl -s http://localhost:3000/stats
 ```
 
 Example HIT payload:
@@ -62,6 +65,19 @@ Example HIT payload:
   "latency": "120ms",
   "provider": "redis",
   "response": "..."
+}
+```
+
+Example `/stats` payload:
+
+```json
+{
+  "cacheHits": 19,
+  "cacheMisses": 3,
+  "hitRate": "86.4%",
+  "avgSimilarity": 0.93,
+  "savedTokens": 12450,
+  "estimatedCostSaved": "$1.87"
 }
 ```
 
@@ -139,17 +155,25 @@ See [examples/express](./examples/express).
 
 ## Benchmark
 
-| Request | First Call | Second Call |
-|---|---|---|
-| "What is semantic caching?" | **~2.8s** (MISS) | — |
-| "Explain semantic caching" | — | **~120ms** (HIT) |
+| Scenario | Latency |
+|---|---|
+| No Cache | **~2.8s** |
+| Semantic Cache (HIT) | **~140ms** |
 
 ```bash
-npm run demo:simulate   # offline screenshot
-npm run demo            # live OpenAI + Redis
+npm run benchmark
+npm run demo:simulate
 ```
 
 Details: [benchmark/results.md](./benchmark/results.md)
+
+## Publish checklist
+
+- [x] Clone → `npm install` → `docker compose up -d` → run (no code changes)
+- [x] End-to-end: embed → Redis search → similarity → hit/miss → OpenAI → cache → return
+- [x] Cache HIT demo with logs (`npm run demo` / `demo:simulate`)
+- [x] `GET /stats` with hit rate, tokens saved, estimated cost
+- [x] Benchmark centerpiece (`npm run benchmark`)
 
 ## Project layout
 

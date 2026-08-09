@@ -1,65 +1,68 @@
 # Benchmark results
 
-## Article demo (miss → hit)
-
-Run the screenshot-ready flow:
+Centerpiece numbers for the Medium article. Regenerate anytime:
 
 ```bash
-# Offline preview (no API key) — great for terminal screenshots
-npm run demo:simulate
-
-# Live OpenAI + Redis
-cp .env.example .env   # set OPENAI_API_KEY
-docker compose up -d
-npm run demo
+npm run benchmark
 ```
 
-### Example output (simulate)
+## Centerpiece
+
+| Scenario | Latency |
+|---|---|
+| No Cache | **~2.8s** |
+| Semantic Cache (HIT) | **~140ms** |
+
+Typical speedup on paraphrased follow-ups: **~15–20×**.
+
+## Per request (miss → hit)
+
+| Request | No Cache | Semantic Cache |
+|---|---|---|
+| "What is semantic caching?" | ~2.8s | ~2.9s (MISS — embed + OpenAI) |
+| "Explain semantic caching" | ~2.8s | ~140ms (HIT) |
+
+## Terminal demo (logs + screenshot)
+
+```bash
+npm run demo:simulate   # offline, same HIT/MISS logs
+npm run demo            # live OpenAI + Redis
+```
 
 ```
-▶ Prompt: "What is semantic caching?"
-Generating embedding...
-Searching memory for similar prompts...
 ── Cache MISS ──
-No match ≥ 0.9
 Calling OpenAI...
-Saving to memory...
 Latency: 2.8s
 
-▶ Prompt: "Explain semantic caching"
-Generating embedding...
-Searching memory for similar prompts...
 ── Cache HIT ──
 Similarity: 0.99
-Returning cached response
 Latency: 120ms
 ```
 
-### Numbers readers care about
+## Live API stats
 
-| Request | First Call | Second Call |
-|---|---|---|
-| "What is semantic caching?" | **~2.8s** (MISS → OpenAI) | — |
-| "Explain semantic caching" | — | **~120ms** (HIT) |
-
-With live OpenAI, replace these with your `npm run demo` timings before publishing the article.
-
-## Scenario averages (local simulation scripts)
+After a few `/chat` calls:
 
 ```bash
-npm run benchmark:without
-npm run benchmark:with
+curl -s http://localhost:3000/stats
 ```
 
-| Scenario | Avg Latency | Notes |
-|---|---|---|
-| Without Cache | **~4.8s** | Every prompt pays full LLM latency |
-| Exact Prompt Cache | **~1.3s** | Helps only on identical strings |
-| Semantic Cache | **~320ms** | Paraphrases reuse prior answers |
-
-## Reproduce simulation scripts
-
-```bash
-BENCH_ITERATIONS=5 BENCH_LLM_MS=4800 node benchmark/without-cache.js
-BENCH_ITERATIONS=5 BENCH_LLM_MS=4800 BENCH_EMBED_MS=180 BENCH_CACHE_MS=40 node benchmark/with-cache.js
+```json
+{
+  "cacheHits": 19,
+  "cacheMisses": 3,
+  "hitRate": "86.4%",
+  "avgSimilarity": 0.93,
+  "savedTokens": 12450,
+  "estimatedCostSaved": "$1.87"
+}
 ```
+
+## Other scripts
+
+| Script | Purpose |
+|---|---|
+| `benchmark.js` | Article centerpiece (this file) |
+| `without-cache.js` | No-cache only |
+| `with-cache.js` | Semantic cache only |
+| `../scripts/demo.js` | Full HIT/MISS flow logs |
