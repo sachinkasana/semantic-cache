@@ -1,36 +1,65 @@
 # Benchmark results
 
-Sample numbers from the local simulation scripts (no OpenAI/Redis required).
-Re-run anytime:
+## Article demo (miss → hit)
+
+Run the screenshot-ready flow:
+
+```bash
+# Offline preview (no API key) — great for terminal screenshots
+npm run demo:simulate
+
+# Live OpenAI + Redis
+cp .env.example .env   # set OPENAI_API_KEY
+docker compose up -d
+npm run demo
+```
+
+### Example output (simulate)
+
+```
+▶ Prompt: "What is semantic caching?"
+Generating embedding...
+Searching memory for similar prompts...
+── Cache MISS ──
+No match ≥ 0.9
+Calling OpenAI...
+Saving to memory...
+Latency: 2.8s
+
+▶ Prompt: "Explain semantic caching"
+Generating embedding...
+Searching memory for similar prompts...
+── Cache HIT ──
+Similarity: 0.99
+Returning cached response
+Latency: 120ms
+```
+
+### Numbers readers care about
+
+| Request | First Call | Second Call |
+|---|---|---|
+| "What is semantic caching?" | **~2.8s** (MISS → OpenAI) | — |
+| "Explain semantic caching" | — | **~120ms** (HIT) |
+
+With live OpenAI, replace these with your `npm run demo` timings before publishing the article.
+
+## Scenario averages (local simulation scripts)
 
 ```bash
 npm run benchmark:without
 npm run benchmark:with
 ```
 
-## Summary
-
 | Scenario | Avg Latency | Notes |
 |---|---|---|
 | Without Cache | **~4.8s** | Every prompt pays full LLM latency |
 | Exact Prompt Cache | **~1.3s** | Helps only on identical strings |
-| Semantic Cache | **~320ms** | Similar prompts reuse embeddings + Redis hit |
+| Semantic Cache | **~320ms** | Paraphrases reuse prior answers |
 
-> Exact Prompt Cache is shown for comparison in articles; SemanticCacheJS focuses on semantic hits.
-
-## Why the gap?
-
-1. **Without cache** — each request waits on the LLM (~4.8s simulated).
-2. **Semantic cache** — first related prompt is a miss; later paraphrases hit after a cheap embed + similarity lookup (~180ms + ~40ms).
-3. Hit rate climbs quickly when users rephrase the same question.
-
-## Reproduce
+## Reproduce simulation scripts
 
 ```bash
 BENCH_ITERATIONS=5 BENCH_LLM_MS=4800 node benchmark/without-cache.js
 BENCH_ITERATIONS=5 BENCH_LLM_MS=4800 BENCH_EMBED_MS=180 BENCH_CACHE_MS=40 node benchmark/with-cache.js
 ```
-
-Tune env vars to match your production p50 LLM / embedding latency for article screenshots.
-
-The local bag-of-words embedder uses `BENCH_THRESHOLD` (default `0.5`) so paraphrases hit without calling OpenAI. Production apps should keep `SIMILARITY_THRESHOLD` near `0.92` with real embeddings.

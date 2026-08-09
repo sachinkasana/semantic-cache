@@ -33,6 +33,7 @@ describe("SemanticCache.ask end-to-end", () => {
     const llm = fakeLLMProvider("cached");
     const cache = new SemanticCache({
       threshold: 0.9,
+      verbose: false,
       cacheProvider: new MemoryCacheProvider(),
       embeddingProvider: fakeEmbeddingProvider({
         "What is caching?": [1, 0],
@@ -62,6 +63,7 @@ describe("SemanticCache.ask end-to-end", () => {
 
   it("requires a prompt string", async () => {
     const cache = new SemanticCache({
+      verbose: false,
       cacheProvider: new MemoryCacheProvider(),
       embeddingProvider: { async embed() { return [1]; } },
       llmProvider: { async complete() { return "x"; } },

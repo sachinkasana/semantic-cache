@@ -6,6 +6,7 @@ import { MemoryCacheProvider } from "./cache/MemoryCacheProvider.js";
 import { RedisCacheProvider } from "./cache/RedisCacheProvider.js";
 import { findBestMatch } from "./services/similarity.service.js";
 import { buildResult } from "./utils/responseMeta.js";
+import { flowLog, formatLatency } from "./utils/flowLog.js";
 import {
   getStats,
   recordHit,
@@ -36,6 +37,7 @@ export class SemanticCache {
    * @param {string} [options.apiKey]
    * @param {string} [options.redisUrl]
    * @param {number} [options.threshold]
+   * @param {boolean} [options.verbose]
    * @param {import("./interfaces/EmbeddingProvider.js").EmbeddingProvider} [options.embeddingProvider]
    * @param {import("./interfaces/LLMProvider.js").LLMProvider} [options.llmProvider]
    * @param {import("./interfaces/CacheProvider.js").CacheProvider} [options.cacheProvider]
@@ -44,6 +46,7 @@ export class SemanticCache {
     this.threshold = Number(
       options.threshold ?? process.env.SIMILARITY_THRESHOLD ?? 0.92,
     );
+    this.verbose = options.verbose ?? process.env.SEMANTIC_CACHE_LOG !== "0";
 
     this.embeddingProvider =
       options.embeddingProvider ||
@@ -76,12 +79,24 @@ export class SemanticCache {
     }
 
     const startedAt = Date.now();
+    const log = (...args) => flowLog(this.verbose, ...args);
+    const backend = this.cacheBackendName;
+
+    log(`\n▶ Prompt: "${prompt}"`);
+    log("Generating embedding...");
     const embedding = await this.embeddingProvider.embed(prompt);
+
+    log(`Searching ${backend} for similar prompts...`);
     const entries = await this.cacheProvider.getAll();
     const hit = findBestMatch(embedding, entries, this.threshold);
 
     if (hit) {
+      const latencyMs = Date.now() - startedAt;
       recordHit({ similarity: hit.score, response: hit.response });
+      log("── Cache HIT ──");
+      log(`Similarity: ${hit.score.toFixed(2)}`);
+      log("Returning cached response");
+      log(`Latency: ${formatLatency(latencyMs)}`);
       return buildResult({
         cached: true,
         similarity: hit.score,
@@ -91,14 +106,22 @@ export class SemanticCache {
       });
     }
 
+    log("── Cache MISS ──");
+    log(`No match ≥ ${this.threshold}`);
+    log("Calling OpenAI...");
     recordMiss();
     const response = await this.llmProvider.complete(prompt);
+
+    log(`Saving to ${backend}...`);
     await this.cacheProvider.add({
       prompt,
       embedding,
       response,
       createdAt: Date.now(),
     });
+
+    const latencyMs = Date.now() - startedAt;
+    log(`Latency: ${formatLatency(latencyMs)}`);
 
     return buildResult({
       cached: false,

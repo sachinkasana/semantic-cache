@@ -14,24 +14,56 @@ Reduce repeated LLM calls, cut token costs, and lower latency by caching respons
 
 ![SemanticCacheJS architecture](./semantic-cache.png)
 
-## Installation
+## Quick Start (5 minutes)
 
 ```bash
 git clone https://github.com/sachinkasana/semantic-cache.git
 cd semantic-cache
 npm install
 cp .env.example .env
-# set OPENAI_API_KEY
+# set OPENAI_API_KEY in .env
+
 docker compose up -d
+npm run demo
 ```
 
-> Publishing to npm as `semantic-cache-js` is on the roadmap. Today, import from source:
+You should see a **Cache MISS** (~seconds) then a **Cache HIT** (~milliseconds) for a paraphrased prompt — with step-by-step logs in the terminal.
 
-```js
-import { SemanticCache } from "./src/index.js";
+Offline preview (no API key, same log format for screenshots):
+
+```bash
+npm run demo:simulate
 ```
 
-## Quick Start
+### Express API
+
+```bash
+npm run dev
+```
+
+```bash
+# 1) Miss — calls OpenAI, stores in Redis
+curl -s http://localhost:3000/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"What is semantic caching?"}'
+
+# 2) Hit — similar meaning, cached response
+curl -s http://localhost:3000/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Explain semantic caching"}'
+```
+
+Example HIT payload:
+
+```json
+{
+  "cached": true,
+  "similarity": 0.94,
+  "latency": "120ms",
+  "provider": "redis",
+  "response": "..."
+}
+```
 
 ### Library API
 
@@ -40,40 +72,12 @@ import { SemanticCache } from "./src/index.js";
 
 const cache = new SemanticCache({
   provider: "openai",
-  cache: "redis", // or "memory"
+  cache: "redis",
   redisUrl: process.env.REDIS_URL,
-  threshold: 0.92,
+  threshold: 0.85,
 });
 
 const result = await cache.ask("What is semantic caching?");
-console.log(result);
-// { cached, similarity, latency, provider, response }
-
-console.log(cache.stats());
-```
-
-### Express demo
-
-```bash
-npm run dev
-```
-
-```bash
-curl -s http://localhost:3000/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"prompt":"What is semantic caching?"}'
-```
-
-A paraphrased follow-up should return a cache hit:
-
-```json
-{
-  "cached": true,
-  "similarity": 0.94,
-  "latency": "42ms",
-  "provider": "redis",
-  "response": "..."
-}
 ```
 
 ## How It Works
@@ -135,15 +139,14 @@ See [examples/express](./examples/express).
 
 ## Benchmark
 
-| Scenario | Avg Latency |
-|---|---|
-| Without Cache | **~4.8s** |
-| Exact Prompt Cache | **~1.3s** |
-| Semantic Cache | **~320ms** |
+| Request | First Call | Second Call |
+|---|---|---|
+| "What is semantic caching?" | **~2.8s** (MISS) | — |
+| "Explain semantic caching" | — | **~120ms** (HIT) |
 
 ```bash
-npm run benchmark:without
-npm run benchmark:with
+npm run demo:simulate   # offline screenshot
+npm run demo            # live OpenAI + Redis
 ```
 
 Details: [benchmark/results.md](./benchmark/results.md)
