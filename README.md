@@ -12,10 +12,13 @@ A production-ready semantic cache starter built with Node.js, Express, Redis, an
 
 ```
 src/
-  config/       # OpenAI + Redis clients
-  routes/       # HTTP routes
-  services/     # Embedding, cache, LLM
-  utils/        # Cosine similarity
+  app.js
+  server.js
+  config/         # OpenAI + Redis clients
+  services/       # Embedding, cache, similarity, LLM
+  routes/         # HTTP routes
+  middleware/     # Request logger
+  utils/          # Cosine similarity math
 ```
 
 ## Tech Stack
