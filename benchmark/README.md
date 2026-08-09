@@ -1,15 +1,16 @@
 # Benchmarks
 
-Measure cache hit rate, p50/p95 latency, and token savings vs uncached LLM calls.
+Local simulations that do **not** require OpenAI or Redis — ideal for article screenshots and CI.
+
+| Script | Purpose |
+|---|---|
+| `without-cache.js` | Every prompt pays full LLM latency |
+| `with-cache.js` | Semantic hits after the first related miss |
+| `results.md` | Published summary table |
 
 ```bash
-# Coming in v5 / observability work
-# npm run benchmark
+npm run benchmark:without
+npm run benchmark:with
 ```
 
-Planned metrics:
-
-- Cache hit rate (%)
-- Latency: cached vs uncached
-- Estimated tokens / cost saved
-- Similarity score distribution
+See [results.md](./results.md) for the comparison table used in the README.

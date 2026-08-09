@@ -1,6 +1,6 @@
 # Express example
 
-The v1 Express demo lives in the repo root (`src/`).
+## Option A — routes (repo default)
 
 ```bash
 npm install
@@ -13,6 +13,36 @@ npm run dev
 curl -s http://localhost:3000/chat \
   -H 'Content-Type: application/json' \
   -d '{"prompt":"Explain semantic caching in one sentence"}'
+
+curl -s http://localhost:3000/stats
 ```
 
-Future articles will extract a reusable client and keep this folder as a thin Express wiring example.
+## Option B — middleware
+
+```js
+import express from "express";
+import { semanticCache } from "../../src/middleware/semanticCache.js";
+
+const app = express();
+app.use(express.json());
+
+app.post(
+  "/chat",
+  semanticCache({
+    threshold: 0.92,
+  }),
+);
+
+app.listen(3000);
+```
+
+Passthrough mode if you want to enrich the response yourself:
+
+```js
+app.post("/chat", semanticCache({ passthrough: true }), (req, res) => {
+  res.json({
+    ...res.locals.semanticCache,
+    requestId: req.headers["x-request-id"],
+  });
+});
+```

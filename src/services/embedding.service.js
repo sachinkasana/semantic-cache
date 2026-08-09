@@ -1,12 +1,12 @@
-import openai from "../config/openai.js";
+import { createOpenAIEmbeddingProvider } from "../providers/openai.embedding.js";
+import { embedWith } from "../providers/embedding.provider.js";
 
-const MODEL = process.env.EMBEDDING_MODEL || "text-embedding-3-small";
+const defaultProvider = createOpenAIEmbeddingProvider();
 
-export async function createEmbedding(text) {
-  const { data } = await openai.embeddings.create({
-    model: MODEL,
-    input: text,
-  });
-
-  return data[0].embedding;
+/**
+ * Create an embedding for text using the configured provider.
+ * Swap providers later (Gemini, Voyage, Cohere, Ollama) without touching cache logic.
+ */
+export async function createEmbedding(text, provider = defaultProvider) {
+  return embedWith(provider, text);
 }

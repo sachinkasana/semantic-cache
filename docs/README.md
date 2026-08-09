@@ -3,4 +3,6 @@
 Design notes and guides for SemanticCacheJS.
 
 - [Architecture](./architecture.md)
-- Provider adapters, middleware API, and multi-tenant design notes will land with later versions.
+- [Providers](./providers.md)
+
+Provider adapters, middleware API, and multi-tenant design notes land with later versions.
